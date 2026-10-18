@@ -17,7 +17,7 @@ Die App sendet keine Zeitdaten an einen Server. Die Dateien müssen allerdings e
 ## Arbeitszeitlogik
 - Frühere Einstempelung bleibt sichtbar, anrechenbarer Start frühestens 06:00
 - Montag bis Donnerstag: 25 min Pause + 15 min Frühstück
-- Freitag: 0 min Pause bei weniger als 6 h Anwesenheit; ab 6 h 25 min Pause
+- Freitag: 15 min Pause bei weniger als 6 h Anwesenheit; ab 6 h 25 min Pause
 - Buchung zeigt die tatsächliche anrechenbare Arbeitszeit als Dezimalstunden
 - Sollzeit separat für Flexsaldo: 459 min Mo–Do (7,65 h), 324 min Freitag (5,40 h)
 
