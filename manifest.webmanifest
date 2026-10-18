@@ -1,0 +1,12 @@
+{
+  "id": "./",
+  "name": "Heidlandtools NFC-Stempeluhr",
+  "short_name": "HT Stempeluhr",
+  "description": "Lokaler Arbeitszeit-Tracker mit NFC-Stempelstart",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08101d",
+  "theme_color": "#0b1220",
+  "lang": "de"
+}

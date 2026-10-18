@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="description" content="Lokaler Heidlandtools Arbeitszeit-Tracker mit NFC-Stempelstart.">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Heidlandtools · NFC-Stempeluhr</title>
+<style>
+:root{--bg:#08101d;--panel:#0f1a2b;--panel2:#142238;--line:#26364e;--text:#eef4ff;--muted:#8fa2bd;--accent:#38bdf8;--green:#22c55e;--red:#fb7185;--shadow:0 18px 50px #0007}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);background:radial-gradient(circle at 15% 0%,#163052 0,transparent 35%),radial-gradient(circle at 100% 15%,#123b4c 0,transparent 28%),var(--bg)}
+.app{max-width:980px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 20px}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#38bdf8,#2563eb);font-weight:900;font-size:21px}.brand h1{font-size:19px;margin:0}.brand small,.muted{color:var(--muted)}.date{text-align:right;color:var(--muted);font-size:12px}
+.card{background:linear-gradient(145deg,#111e31ee,#0c1728ee);border:1px solid var(--line);border-radius:19px;box-shadow:var(--shadow);padding:18px;margin-bottom:13px}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:16px}.status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:14px}.dot{width:10px;height:10px;border-radius:50%;background:#64748b}.dot.live{background:var(--green);box-shadow:0 0 15px #22c55e}.hero h2{font-size:clamp(22px,5vw,30px);margin:8px 0}.hero small{color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}button{border:1px solid #33445e;border-radius:12px;padding:12px 14px;font-weight:750;color:white;background:#233149;cursor:pointer}button:disabled{opacity:.4}.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:0}.secondary{background:#16253b}.danger{background:transparent;border-color:#56333a;color:#fca5a5}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:13px}.stat{padding:15px}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.value{font-size:clamp(19px,3vw,25px);font-weight:850;margin-top:7px;overflow-wrap:anywhere}.sub{font-size:12px;color:var(--muted);margin-top:4px}.blue{color:#67e8f9}.good{color:#4ade80}.negative{color:#fb7185}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:13px}.card h3{font-size:16px;margin:0 0 12px}.rows{display:grid}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #223149}.row:last-child{border-bottom:0}.row span:first-child{color:var(--muted)}.pill{padding:4px 9px;border-radius:999px;background:#16253b;color:#c8d7eb;font-size:12px;white-space:nowrap}.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}th{color:var(--muted);font-weight:600;text-align:left}td,th{padding:10px 7px;border-bottom:1px solid #213049;white-space:nowrap}.scroll{overflow:auto}.empty{text-align:center;color:var(--muted);padding:22px}
+#toast{display:none;position:sticky;top:8px;z-index:4;margin:0 0 12px;padding:12px 14px;border-radius:12px;background:#123b2a;border:1px solid #226b48;color:#d7ffe7;font-weight:700}
+.footer{display:flex;gap:8px;flex-wrap:wrap}.footer button{font-size:12px}.fileinput{display:none}
+@media(max-width:720px){.grid{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}.hero{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions button{flex:1}.app{padding:13px}}
+@media(max-width:390px){.top{align-items:flex-start}.date{max-width:115px}.stat{padding:12px}.value{font-size:19px}}
+#warn{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:12px 14px;border-radius:12px;background:#3b2a12;border:1px solid #7a5a1e;color:#ffe9c2;font-weight:700}
+.rowhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.rowhead h3{margin:0}.edit{padding:6px 10px;font-size:12px}
+dialog{border:1px solid var(--line);border-radius:19px;background:#0f1a2b;color:var(--text);padding:18px;width:min(92vw,380px)}dialog::backdrop{background:#000a}dialog h3{margin:0 0 6px}
+dialog label{display:grid;gap:5px;margin:12px 0;color:var(--muted);font-size:12px}dialog input{font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid #33445e;background:#142238;color:var(--text);color-scheme:dark}
+.dlgbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="warn"></div>
+  <header class="top">
+    <div class="brand"><div class="logo">HT</div><div><h1>Heidlandtools</h1><small>Arbeitszeit · NFC-Stempeluhr</small></div></div>
+    <div class="date" id="date"></div>
+  </header>
+  <section class="card hero">
+    <div>
+      <div class="status"><i class="dot" id="dot"></i><span id="status">Nicht eingestempelt</span></div>
+      <h2 id="headline">Bereit für heute</h2><small id="clock"></small>
+    </div>
+    <div class="actions">
+      <button class="primary" id="toggleBtn">▶ Einstempeln</button>
+      <button id="undoBtn" class="secondary">Letzte Stempelung korrigieren</button>
+    </div>
+  </section>
+  <div class="grid">
+    <div class="card stat"><div class="label">Anwesenheit</div><div class="value" id="presence">–</div><div class="sub">anrechenbar ab 06:00</div></div>
+    <div class="card stat"><div class="label">Arbeitszeit</div><div class="value blue" id="work">–</div><div class="sub">nach Pausen</div></div>
+    <div class="card stat"><div class="label">Buchung</div><div class="value" id="booking">–</div><div class="sub">tatsächliche Dezimalstunden</div></div>
+    <div class="card stat"><div class="label">Flexsaldo</div><div class="value" id="flex">–</div><div class="sub">gegen Sollzeit</div></div>
+  </div>
+  <div class="main">
+    <section class="card"><h3>Heute im Detail</h3><div class="rows" id="details"></div></section>
+    <section class="card"><h3>Deine Regeln</h3><div class="rows">
+      <div class="row"><span>Frühester anrechenbarer Start</span><b class="pill">06:00</b></div>
+      <div class="row"><span>Flexfenster morgens</span><b class="pill">06:00–08:00</b></div>
+      <div class="row"><span>Flexfenster nachmittags</span><b class="pill">14:19–16:19</b></div>
+      <div class="row"><span>Soll Mo–Do</span><b class="pill">7,65 h</b></div>
+      <div class="row"><span>Soll Freitag</span><b class="pill">5,40 h</b></div>
+    </div><p class="note">Mo–Do: 25 Minuten Pause und 15 Minuten Frühstück. Freitag: keine Pause unter 6 Stunden Anwesenheit, ab 6 Stunden 25 Minuten Pause. Frühere Stempelzeiten bleiben sichtbar, werden aber erst ab 06:00 angerechnet.</p></section>
+  </div>
+  <section class="card"><div class="rowhead"><h3>Verlauf</h3><button id="addBtn" class="secondary">＋ Nachtragen</button></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Stempelung</th><th>Anwesenheit</th><th>Buchung</th><th>Flex</th><th></th></tr></thead><tbody id="history"></tbody></table></div></section>
+  <section class="card"><h3>NFC & Datensicherung</h3>
+    <p class="note">Der NFC-Tag öffnet diese App mit einem Stempel-Aufruf. Die Zeiten bleiben ausschließlich in diesem Browser auf diesem Gerät. Für NFC-Automatik muss die App über eine HTTPS-Adresse bereitgestellt und einmal geöffnet/installiert werden. Diese Dateien enthalten keinen Server und übertragen keine Stempelzeiten.</p>
+    <div class="footer">
+      <button id="exportBtn">Zeiten als CSV exportieren</button>
+      <button id="backupBtn">Datensicherung (JSON)</button>
+      <button id="importBtn">JSON wiederherstellen</button>
+      <button id="clearBtn" class="danger">Verlauf löschen</button>
+      <input id="importFile" class="fileinput" type="file" accept="application/json,.json">
+    </div>
+  </section>
+  <p class="note">Offline-Hinweis: Nach der Bereitstellung als installierbare Web-App kann die Oberfläche offline verfügbar sein. Ein NFC-Tag kann die App beim ersten Aufruf nicht aus dem Nichts installieren; die Einrichtung muss vorher erfolgen.</p>
+</div>
+<dialog id="editDlg">
+  <h3 id="dlgTitle">Eintrag korrigieren</h3>
+  <label>Datum<input type="date" id="fDate"></label>
+  <label>Eingestempelt<input type="time" id="fIn"></label>
+  <label>Ausgestempelt (leer = noch offen)<input type="time" id="fOut"></label>
+  <div class="dlgbtns"><button id="dlgSave" class="primary">Speichern</button><button id="dlgCancel" class="secondary">Abbrechen</button><button id="dlgDel" class="danger">Löschen</button></div>
+</dialog>
+<script>
+const KEY="heidlandtools_arbeitszeit_v4";
+const OLD_KEY="heidlandtools_arbeitszeit_v3";
+let entries=[];
+try {
+  const saved=localStorage.getItem(KEY);
+  const old=localStorage.getItem(OLD_KEY);
+  entries=JSON.parse(saved || old || "[]");
+  if(!saved && old) localStorage.setItem(KEY, JSON.stringify(entries));
+  if(!Array.isArray(entries)) entries=[];
+} catch { entries=[]; }
+const $=id=>document.getElementById(id);
+const localDate=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const timeStr=d=>d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit",hour12:false});
+const mins=s=>{const [h,m]=s.split(":").map(Number);return h*60+m};
+const hm=n=>{n=Math.round(n);const sign=n<0?"−":"";return sign+(Math.abs(n)/60).toFixed(2).replace(".",",")+" h"};
+const dec=n=>(n/60).toFixed(2).replace(".",",")+" h";
+const wd=date=>new Date(date+"T12:00:00").getDay();
+function rules(date){const d=wd(date);if(d>=1&&d<=4)return {target:459,break:25,breakfast:15};if(d===5)return {target:324,break:0,breakfast:0};return {target:0,break:0,breakfast:0}}
+function calc(e,live=false){
+ if(!e?.in)return null;
+ const r=rules(e.date), raw=mins(e.in);
+ let out=e.out?mins(e.out):null;
+ if(out===null && live && e.date===localDate())out=mins(timeStr(new Date()));
+ if(out===null)return null;
+ const start=Math.max(raw,360);
+ const presence=Math.max(0,out-start);
+ let pause=r.break;
+ if(wd(e.date)===5&&presence<360)pause=0;
+ const work=Math.max(0,presence-pause-r.breakfast);
+ return {presence,work,pause,breakfast:r.breakfast,flex:work-r.target,target:r.target,raw,start,out};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(entries))}
+let toastTimer;
+function toast(message){const t=$("toast");t.textContent=message;t.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display="none",4200)}
+function todayEntry(){return entries.find(e=>e.date===localDate()&&!e.out)}
+function stampToggle(source="button"){
+ const date=localDate(),open=todayEntry();
+ if(open){open.out=timeStr(new Date());open.outSource=source;save();render();toast("Ausgestempelt um "+open.out);}
+ else {
+  const alreadyClosed=entries.some(e=>e.date===date&&e.out);
+  if(alreadyClosed){toast("Für heute gibt es bereits einen abgeschlossenen Arbeitstag. Zum Ändern im Verlauf auf ✎ tippen.");return}
+  const stamp=timeStr(new Date());entries.push({date,in:stamp,out:null,inSource:source});save();render();toast("Eingestempelt um "+stamp);
+ }
+}
+function undoLast(){
+ if(!entries.length){toast("Noch keine Stempelung vorhanden.");return}
+ const e=entries[entries.length-1];
+ if(e.out){e.out=null;delete e.outSource;save();render();toast("Ausstempelung zurückgenommen.")}
+ else {entries.pop();save();render();toast("Letzte Einstempelung entfernt.")}
+}
+function render(){
+ const now=new Date(),date=localDate(),e=entries.filter(x=>x.date===date).slice(-1)[0],open=todayEntry();
+ $("date").textContent=now.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
+ $("clock").textContent=now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+ $("status").textContent=open?"Eingestempelt":(e?.out?"Ausgestempelt":"Nicht eingestempelt");
+ $("headline").textContent=open?"Du bist aktuell eingestempelt":(e?.out?"Arbeitstag abgeschlossen":"Bereit für heute");
+ $("dot").className="dot"+(open?" live":"");
+ $("toggleBtn").textContent=open?"■ Ausstempeln":"▶ Einstempeln";
+ $("undoBtn").disabled=!entries.length;
+ if(e){
+   const c=calc(e,!!open);
+   if(c){
+    $("presence").textContent=hm(c.presence);$("work").textContent=hm(c.work);
+    $("booking").textContent=dec(c.work);
+    $("flex").textContent=(c.flex>=0?"+":"−")+hm(Math.abs(c.flex));
+    $("flex").className="value "+(c.flex>=0?"good":"negative");
+    $("details").innerHTML=
+      `<div class="row"><span>Eingestempelt (Original)</span><b>${e.in}</b></div>`+
+      `<div class="row"><span>Ausgestempelt</span><b>${e.out||"läuft …"}</b></div>`+
+      `<div class="row"><span>Anrechenbarer Start</span><b class="blue">${String(Math.floor(c.start/60)).padStart(2,"0")}:${String(c.start%60).padStart(2,"0")}</b></div>`+
+      `<div class="row"><span>Pause</span><b>${dec(c.pause)}</b></div>`+
+      `<div class="row"><span>Frühstück</span><b>${dec(c.breakfast)}</b></div>`+
+      `<div class="row"><span>Sollzeit für Flexsaldo</span><b>${dec(c.target)}</b></div>`;
+   } else {$("presence").textContent=$("work").textContent=$("booking").textContent=$("flex").textContent="–"}
+ }else{
+   $("presence").textContent=$("work").textContent=$("booking").textContent=$("flex").textContent="–";
+   $("flex").className="value";
+   $("details").innerHTML='<div class="row"><span>Status</span><b class="pill">Keine Stempelung heute</b></div><div class="row"><span>Sollzeit für Flexsaldo</span><b>'+dec(rules(date).target)+'</b></div>';
+ }
+ const stale=entries.map((x,i)=>({x,i})).filter(o=>!o.x.out&&o.x.date!==date),w=$("warn");
+ if(stale.length){w.style.display="flex";w.innerHTML=`<span>⚠ Ausstempeln fehlt am ${fmtDate(stale[0].x.date)}</span><button class="edit" data-i="${stale[0].i}">Korrigieren</button>`}else w.style.display="none";
+ $("history").innerHTML=entries.map((item,i)=>({item,i})).reverse().map(({item,i})=>{
+   const btn=`<td><button class="edit" data-i="${i}">✎</button></td>`;
+   const c=calc(item,false);
+   if(!c)return `<tr><td>${fmtDate(item.date)}</td><td>${item.in} – offen</td><td>–</td><td>–</td><td>–</td>${btn}</tr>`;
+   const f=(c.flex>=0?"+":"−")+hm(Math.abs(c.flex));
+   return `<tr><td>${fmtDate(item.date)}</td><td>${item.in} – ${item.out}</td><td>${hm(c.presence)}</td><td>${dec(c.work)}</td><td class="${c.flex>=0?"good":"negative"}">${f}</td>${btn}</tr>`;
+ }).join("")||'<tr><td colspan="6" class="empty">Noch keine Einträge vorhanden.</td></tr>';
+}
+let editIdx=null;
+const fmtDate=d=>d.split("-").reverse().join(".");
+const sortEntries=()=>entries.sort((a,b)=>a.date.localeCompare(b.date)||String(a.in).localeCompare(String(b.in)));
+function openEdit(i){
+ editIdx=i;const e=i===null?null:entries[i];
+ $("dlgTitle").textContent=e?"Eintrag korrigieren":"Eintrag nachtragen";
+ $("fDate").value=e?e.date:localDate();$("fIn").value=e?.in||"";$("fOut").value=e?.out||"";
+ $("dlgDel").style.display=e?"":"none";$("editDlg").showModal();
+}
+function saveEdit(){
+ const date=$("fDate").value,tin=$("fIn").value,tout=$("fOut").value;
+ if(!date||!tin){alert("Bitte Datum und Einstempelzeit angeben.");return}
+ if(tout&&mins(tout)<=mins(tin)){alert("Die Ausstempelzeit muss nach der Einstempelzeit liegen.");return}
+ if(entries.some((x,k)=>k!==editIdx&&x.date===date)){alert("Für dieses Datum gibt es schon einen Eintrag – bitte den bestehenden korrigieren.");return}
+ if(editIdx===null)entries.push({date,in:tin,out:tout||null,edited:true});
+ else{const e=entries[editIdx];e.date=date;e.in=tin;e.out=tout||null;e.edited=true;if(!tout)delete e.outSource}
+ sortEntries();save();$("editDlg").close();render();toast("Gespeichert.");
+}
+function deleteEdit(){if(editIdx!==null&&confirm("Diesen Eintrag wirklich löschen?")){entries.splice(editIdx,1);save();$("editDlg").close();render();toast("Eintrag gelöscht.")}}
+function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportCSV(){
+ const d2=n=>(n/60).toFixed(2).replace(".",",");
+ const rows=[["Datum","Einstempelung","Ausstempelung","Anwesenheit (h)","Buchung (h)","Flex (h)"]];
+ entries.forEach(e=>{const c=calc(e,false);rows.push([e.date,e.in,e.out||"",c?d2(c.presence):"",c?d2(c.work):"",c?d2(c.flex):""])});
+ const csv="\ufeff"+rows.map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(";")).join("\r\n");
+ download("heidlandtools-arbeitszeit.csv",csv,"text/csv;charset=utf-8");
+}
+function backup(){download("heidlandtools-arbeitszeit-sicherung.json",JSON.stringify({version:4,exportedAt:new Date().toISOString(),entries},null,2),"application/json")}
+function importBackup(file){
+ const reader=new FileReader();
+ reader.onload=()=>{try{const parsed=JSON.parse(reader.result);const incoming=Array.isArray(parsed)?parsed:parsed.entries;if(!Array.isArray(incoming)||!confirm("Import ersetzt den aktuellen Verlauf. Fortfahren?"))return;entries=incoming;save();render();toast("Datensicherung importiert.");}catch{alert("Die JSON-Datei konnte nicht gelesen werden.")}};
+ reader.readAsText(file);
+}
+$("toggleBtn").addEventListener("click",()=>stampToggle("button"));
+$("undoBtn").addEventListener("click",undoLast);
+$("exportBtn").addEventListener("click",exportCSV);
+$("backupBtn").addEventListener("click",backup);
+$("importBtn").addEventListener("click",()=>$("importFile").click());
+$("importFile").addEventListener("change",e=>{if(e.target.files[0])importBackup(e.target.files[0]);e.target.value=""});
+$("clearBtn").addEventListener("click",()=>{if(confirm("Gesamten lokalen Verlauf wirklich löschen? Dies kann nicht rückgängig gemacht werden.")){entries=[];save();render();toast("Lokaler Verlauf gelöscht.")}});
+document.addEventListener("click",ev=>{const b=ev.target.closest("button[data-i]");if(b)openEdit(Number(b.dataset.i))});
+$("addBtn").addEventListener("click",()=>openEdit(null));
+$("dlgSave").addEventListener("click",saveEdit);
+$("dlgCancel").addEventListener("click",()=>$("editDlg").close());
+$("dlgDel").addEventListener("click",deleteEdit);
+render();setInterval(render,30000);
+
+// NFC-Tag URL: https://DEINE-APP-ADRESSE/?nfc=1
+// Avoid double clocking if Android/browser reopens/reloads the same tag instantly.
+const params=new URLSearchParams(location.search);
+if(params.get("nfc")==="1"){
+ // Parameter sofort entfernen: Neuladen oder Tab-Wiederherstellung stempelt nicht erneut.
+ history.replaceState(null,"",location.pathname+location.hash);
+ const guardKey="ht_nfc_last_stamp";
+ let last=0;try{last=Number(localStorage.getItem(guardKey)||0)}catch{}
+ const now=Date.now();
+ if(now-last>10000){try{localStorage.setItem(guardKey,String(now))}catch{};setTimeout(()=>stampToggle("nfc"),450)}
+ else{toast("NFC-Kontakt gerade schon verarbeitet – bitte kurz warten.")}
+}
+if("serviceWorker" in navigator && location.protocol.startsWith("http") && location.hostname!=="localhost"){
+ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
