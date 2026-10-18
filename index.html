@@ -109,9 +109,11 @@ function calc(e,live=false){
  if(out===null)return null;
  const start=Math.max(raw,360);
  const presence=Math.max(0,out-start);
- let pause=r.break;
- if(wd(e.date)===5&&presence<360)pause=0;
- const work=Math.max(0,presence-pause-r.breakfast);
+let pause = r.break;
+if (wd(e.date) === 5) {
+  pause = presence < 360 ? 15 : 40;
+}
+const work = Math.max(0, presence - pause - r.breakfast);;
  return {presence,work,pause,breakfast:r.breakfast,flex:work-r.target,target:r.target,raw,start,out};
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(entries))}
