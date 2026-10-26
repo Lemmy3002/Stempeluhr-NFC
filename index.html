@@ -27,6 +27,7 @@ dialog{border:1px solid var(--line);border-radius:19px;background:#0f1a2b;color:
 dialog label{display:grid;gap:5px;margin:12px 0;color:var(--muted);font-size:12px}dialog input{font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid #33445e;background:#142238;color:var(--text);color-scheme:dark}
 .dlgbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 body:has(#dot.live) #toggleBtn{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.gotime{display:none;margin-top:10px;padding:9px 13px;border-radius:10px;background:#12301f;border:1px solid #2e7a4a;font-size:15px}.gotime b{color:#4ade80}
 </style>
   
 </head>
@@ -42,6 +43,7 @@ body:has(#dot.live) #toggleBtn{background:linear-gradient(135deg,#dc2626,#ef4444
     <div>
       <div class="status"><i class="dot" id="dot"></i><span id="status">Nicht eingestempelt</span></div>
       <h2 id="headline">Bereit für heute</h2><small id="clock"></small>
+      <div class="gotime" id="goTime"></div>
     </div>
     <div class="actions">
       <button class="primary" id="toggleBtn">▶ Einstempeln</button>
@@ -103,6 +105,15 @@ const hm=n=>{n=Math.round(n);const sign=n<0?"−":"";return sign+(Math.abs(n)/60
 const dec=n=>(n/60).toFixed(2).replace(".",",")+" h";
 const wd=date=>new Date(date+"T12:00:00").getDay();
 function rules(date){const d=wd(date);if(d>=1&&d<=4)return {target:459,break:25,breakfast:15};if(d===5)return {target:324,break:0,breakfast:0};return {target:0,break:0,breakfast:0}}
+function pauseFor(date,presence){let p=rules(date).break;if(wd(date)===5)p=presence<360?15:40;return p}
+const hhmm=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+// Früheste Gehzeit: die kleinste Anwesenheit, bei der Arbeitszeit >= Soll ist (Start zählt erst ab 06:00).
+function earliestLeave(e){
+ const r=rules(e.date);if(!r.target||!e?.in)return null;
+ const start=Math.max(mins(e.in),360);
+ for(let p=0;p<=900;p++){if(Math.max(0,p-pauseFor(e.date,p)-r.breakfast)>=r.target)return start+p}
+ return null;
+}
 function calc(e,live=false){
  if(!e?.in)return null;
  const r=rules(e.date), raw=mins(e.in);
@@ -111,10 +122,7 @@ function calc(e,live=false){
  if(out===null)return null;
  const start=Math.max(raw,360);
  const presence=Math.max(0,out-start);
-let pause = r.break;
-if (wd(e.date) === 5) {
-  pause = presence < 360 ? 15 : 40;
-}
+const pause=pauseFor(e.date,presence);
 const work = Math.max(0, presence - pause - r.breakfast);;
  return {presence,work,pause,breakfast:r.breakfast,flex:work-r.target,target:r.target,raw,start,out};
 }
@@ -145,7 +153,9 @@ function render(){
  $("headline").textContent=open?"Du bist aktuell eingestempelt":(e?.out?"Arbeitstag abgeschlossen":"Bereit für heute");
  $("dot").className="dot"+(open?" live":"");
  $("toggleBtn").textContent=open?"■ Ausstempeln":"▶ Einstempeln";
- $("undoBtn").disabled=!entries.length;
+$("undoBtn").disabled=!entries.length;
+ const go=$("goTime"),eo=open?earliestLeave(open):null;
+ if(eo!==null){const nowM=now.getHours()*60+now.getMinutes();go.style.display="block";go.innerHTML=`Früheste Gehzeit: <b>${hhmm(eo)} Uhr</b>`+(nowM>=eo?" · Soll erreicht ✓":"")}else go.style.display="none";
  if(e){
    const c=calc(e,!!open);
    if(c){
