@@ -71,8 +71,6 @@ body:has(#dot.live) #toggleBtn{background:linear-gradient(135deg,#dc2626,#ef4444
     <p class="note">Der NFC-Tag öffnet diese App mit einem Stempel-Aufruf. Die Zeiten bleiben ausschließlich in diesem Browser auf diesem Gerät. Für NFC-Automatik muss die App über eine HTTPS-Adresse bereitgestellt und einmal geöffnet/installiert werden. Diese Dateien enthalten keinen Server und übertragen keine Stempelzeiten.</p>
     <div class="footer">
       <button id="exportBtn">Zeiten als CSV exportieren</button>
-      <button id="tagAppBtn" style="display:none">App-Sticker beschreiben</button>
-      <button id="tagLinkBtn" style="display:none">Link-Sticker beschreiben</button>
       <button id="backupBtn">Datensicherung (JSON)</button>
       <button id="importBtn">JSON wiederherstellen</button>
       <button id="clearBtn" class="danger">Verlauf löschen</button>
@@ -207,7 +205,7 @@ function saveEdit(){
  sortEntries();save();$("editDlg").close();render();toast("Gespeichert.");
 }
 function deleteEdit(){if(editIdx!==null&&confirm("Diesen Eintrag wirklich löschen?")){entries.splice(editIdx,1);save();$("editDlg").close();render();toast("Eintrag gelöscht.")}}
-function download(name,content,type){if(window.HTNative){HTNative.saveFile(name,String(type||"text/plain"),content);return}const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function download(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function exportCSV(){
  const d2=n=>(n/60).toFixed(2).replace(".",",");
  const rows=[["Datum","Einstempelung","Ausstempelung","Anwesenheit (h)","Buchung (h)","Flex (h)"]];
@@ -233,7 +231,6 @@ $("addBtn").addEventListener("click",()=>openEdit(null));
 $("dlgSave").addEventListener("click",saveEdit);
 $("dlgCancel").addEventListener("click",()=>$("editDlg").close());
 $("dlgDel").addEventListener("click",deleteEdit);
-if(window.HTNative){["tagAppBtn","tagLinkBtn"].forEach((id,k)=>{const b=$(id);b.style.display="";b.addEventListener("click",()=>HTNative.startWrite(k?"link":"app"))})}
 render();setInterval(render,30000);
 
 // NFC-Tag URL: https://DEINE-APP-ADRESSE/?nfc=1
